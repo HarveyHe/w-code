@@ -1,0 +1,218 @@
+SELECT
+c.CONSIGN_ID,
+c.CONSIGN_NO,
+GROUP_CONCAT(DISTINCT bl.BL_NO) AS MBL,
+GROUP_CONCAT(DISTINCT bk.SNNO) AS SONO,
+su.ename AS SALEMAN_NAME,
+hp1.PARTY_EN_FULLNAME AS CONSIGN_DEPT_NAME,
+carrier_bac.BAC_MEANING AS CARRIER_NAME,
+c.ETD,
+lp1.PORT_EN_NAME AS LOAD_PORT_NNAME,
+lp2.PORT_EN_NAME AS DESTINATION_PORT_NAME,
+vcc.CONTAINER,
+c.LOAD_MODE_CODE,
+c.COMMERCE_MODE_CODE,
+c.CREATE_TIME as SUBMIT_DATE,
+c.IS_COMPLETED,
+c.EXPENSE_LOCK,
+c.REF_NO,
+c.HAVE_ACCOUNT_COMMISSION,
+c.LOSS_SINGLE,
+su.company_id,
+(
+SELECT GROUP_CONCAT(DISTINCT blc.CCNI_NO)
+FROM bl_containerinfo blc
+WHERE blc.BL_ID=bl.BL_ID
+)AS CCNI_NO,
+-- blc.ccniNo CCNI_NO,
+GROUP_CONCAT(DISTINCT bk.VESSEL_NAME)VESSEL_NAME,
+GROUP_CONCAT(DISTINCT bk.VOYAGE_NO)VOYAGE_NO,
+
+subd.ename BOOK_DIRECTOR,
+sufd.ename FILE_DIRECTOR,
+suvd.ename VISITOR_DIRECTOR,
+sufp.ename FREIGHT_PRICE_TAKER,
+suop.ename OTHER_PRICE_TAKER, 
+case when exp.RECI_Money is null  then '无应收' else exp.RECI_Money end as RECI_Money,
+case when exp.PAY_Money is null  then '无应付' else exp.PAY_Money end as PAY_Money,
+(
+		SELECT
+			bac.BAC_MEANING
+		FROM
+			bac_info bac
+		WHERE
+			bl.SIGN_ISSUE_MODE_CODE = bac.BAC_CODE
+		AND bac.LOOKUP_TYPE = 'SIGN_MODE'
+		LIMIT 1
+	) AS MHL_TYPE,
+IF(bl.BL_RELEASEDATE = "" || bl.BL_RELEASEDATE is NULL,'N','Y') AS MBL_STATE,
+(
+		SELECT
+			group_concat(
+				DISTINCT bac.BAC_MEANING SEPARATOR ','
+			)
+		FROM
+			bac_info bac
+		WHERE
+			hbl.SIGN_ISSUE_MODE_CODE = bac.BAC_CODE
+		AND bac.LOOKUP_TYPE = 'SIGN_MODE'
+		LIMIT 1
+	) AS BHL_TYPE,
+IF(hbl.BL_RELEASEDATE = "" || hbl.BL_RELEASEDATE is NULL,'N','Y') AS HBL_STATE,
+MAX( IF( bk.CONFIRM_BOOKING='Y',hzbk.PARTY_EN_FULLNAME,null) )AS BOOKING_AGENT,
+sutd.ename as TRAILER_DIRECTOR,
+sucd.ename as CUSTOMS_DIRECTOR,
+c.REM_NO
+
+FROM
+consign AS c
+LEFT JOIN billloading AS bl ON c.CONSIGN_ID=bl.CONSIGN_ID AND bl.IS_DELETED='N' AND bl.BL_TYPE=1
+LEFT JOIN billloading AS hbl ON c.CONSIGN_ID=hbl.CONSIGN_ID AND hbl.IS_DELETED='N' AND hbl.BL_TYPE=2
+LEFT JOIN booking AS bk ON c.CONSIGN_ID = bk.CONSIGN_ID AND bk.IS_DELETED='N'
+LEFT JOIN hz_partise AS hzbk ON bk.BOOKING_AGENT = hzbk.PARTY_CODE
+LEFT JOIN hz_partise AS hp1 ON c.CONSIGN_DEPT = hp1.PARTY_CODE
+LEFT JOIN bac_info AS carrier_bac ON c.CARRIER = carrier_bac.BAC_CODE AND carrier_bac.LOOKUP_TYPE='CARRIER'
+LEFT JOIN localports AS lp1 ON c.LOAD_PORT_ID = lp1.PORT_ID
+LEFT JOIN localports AS lp2 ON c.DESTINATION_PORT_ID = lp2.PORT_ID
+LEFT JOIN v_consign_container AS vcc ON c.CONSIGN_ID = vcc.CONSIGN_ID
+LEFT JOIN sys_user AS su ON c.SALEMAN_ID = su.user_id
+
+LEFT JOIN sys_user AS subd ON c.BOOKING_DIRECTOR = subd.user_id
+LEFT JOIN sys_user AS sufd ON c.FILE_DIRECTOR = sufd.user_id
+LEFT JOIN sys_user AS suvd ON c.VISITOR_DIRECTOR = suvd.user_id
+LEFT JOIN sys_user AS sufp ON c.FREIGHT_PRICE_TAKER = sufp.user_id
+LEFT JOIN sys_user AS suop ON c.OTHER_PRICE_TAKER = suop.user_id
+LEFT JOIN sys_user AS suba ON c.BOOKING_AGENT = suba.user_id  
+LEFT JOIN sys_user AS sutd ON c.TRAILER_DIRECTOR = sutd.user_id  
+LEFT JOIN sys_user AS sucd ON c.CUSTOMS_DIRECTOR = sucd.user_id
+
+LEFT JOIN ( SELECT
+	e.CONSIGN_ID,
+
+IF (
+	(
+		(
+			SUM(
+				CASE EEXP_TYPE
+				WHEN '1' THEN
+					e.EEXP_SUM_AMOUNT
+				ELSE
+					0
+				END
+			) = 0
+		) || (
+			SUM(
+				CASE EEXP_TYPE
+				WHEN '1' THEN
+					e.EEXP_SUM_AMOUNT
+				ELSE
+					0
+				END
+			)
+		) IS NULL
+	),
+	'无应收',
+	CASE
+WHEN (
+	SUM(
+		CASE EEXP_TYPE
+		WHEN '1' THEN
+			e.EEXP_UNSTRITE_AMOUNT
+		ELSE
+			0
+		END
+	)
+) > 0 THEN
+	'部分收款'
+ELSE
+	'已收款'
+END
+) AS RECI_Money,
+
+IF (
+	(
+		(
+			SUM(
+				CASE EEXP_TYPE
+				WHEN '2' THEN
+					e.EEXP_SUM_AMOUNT
+				ELSE
+					0
+				END
+			)
+		) = 0 || (
+			SUM(
+				CASE EEXP_TYPE
+				WHEN '2' THEN
+					e.EEXP_SUM_AMOUNT
+				ELSE
+					0
+				END
+			)
+		) IS NULL
+	),
+	'无应付',
+	CASE
+WHEN (
+	SUM(
+		CASE EEXP_TYPE
+		WHEN '2' THEN
+			e.EEXP_UNSTRITE_AMOUNT
+		ELSE
+			0
+		END
+	)
+) > 0 THEN
+	'部分付款'
+ELSE
+	'已付款'
+END
+) AS PAY_Money
+FROM
+	expense e
+LEFT JOIN consign con ON con.CONSIGN_ID = e.CONSIGN_ID
+AND con.IS_DELETED <> 'Y'
+WHERE
+	e.IS_DELETED <> 'Y'
+GROUP BY
+	e.CONSIGN_ID ) AS exp ON exp.CONSIGN_ID = c.CONSIGN_ID
+
+WHERE
+/*必备条件*/
+ c.IS_DELETED = 'N'
+AND ( (:userId in(c.SALEMAN_ID,c.BOOKING_DIRECTOR,c.FILE_DIRECTOR,c.VISITOR_DIRECTOR,
+            c.TRAILER_DIRECTOR,c.CUSTOMS_DIRECTOR,c.FREIGHT_PRICE_TAKER,c.OTHER_PRICE_TAKER))
+    OR
+   exists(select 1 from sys_user_join t where t.user_id=:userId and t.join_user_id in(
+             c.SALEMAN_ID,c.BOOKING_DIRECTOR,c.FILE_DIRECTOR,c.VISITOR_DIRECTOR,
+             c.TRAILER_DIRECTOR,c.CUSTOMS_DIRECTOR,c.FREIGHT_PRICE_TAKER,c.OTHER_PRICE_TAKER) 
+          limit 1)
+)
+<%if(!(isEmpty(arg.consignNo))){%>AND SplitStr(:consignNo, c.CONSIGN_NO, ',')/*工作号*/<%}%>
+<%if(!(isEmpty(arg.salemanName))){%>AND SplitStr(UPPER(:salemanName), UPPER(su.ename), ',')/*业务员*/<%}%>
+<%if(!(isEmpty(arg.salemanId))){%>AND SplitStr(:salemanId, c.SALEMAN_ID, ',')/*业务员*/<%}%>
+<%if(!(isEmpty(arg.partyCode))){%>AND SplitStr(:partyCode, hp1.PARTY_CODE, ',')/*委托单位*/<%}%>
+<%if(!(isEmpty(arg.mbl))){%>AND SplitStr(:mbl, bl.BL_NO, ',')/*MBL*/<%}%>
+<%if(!(isEmpty(arg.sono))){%>AND SplitStr(:sono, bk.SNNO, ',')/*SONO*/<%}%>
+<%if(!(isEmpty(arg.carrierCode))){%>AND SplitStr(:carrierCode, c.CARRIER, ',')/*承运人*/<%}%>
+<%if(!(isEmpty(arg.loadPortId))){%>AND SplitStr(:loadPortId, lp1.PORT_ID, ',')/*起运港*/<%}%>
+<%if(!(isEmpty(arg.destinationPortId))){%>AND SplitStr(:destinationPortId, lp2.PORT_ID, ',')/*目的港*/<%}%>
+<%if(!(isEmpty(arg.loadModeCode))){%>AND SplitStr(:loadModeCode, c.LOAD_MODE_CODE, ',')/*装运方式*/<%}%>
+<%if(!(isEmpty(arg.commerceModeCode))){%>AND SplitStr(:commerceModeCode, c.COMMERCE_MODE_CODE, ',')/*贸易方式*/<%}%>
+<%if(!(isEmpty(arg.refNo))){%>AND SplitStr(:refNo, c.REF_NO, ',')/*参考号*/<%}%>
+<%if(!(isEmpty(arg.haveAccountCommission))){%>AND IF(:haveAccountCommission='N',c.HAVE_ACCOUNT_COMMISSION IS NULL OR c.HAVE_ACCOUNT_COMMISSION='N',c.HAVE_ACCOUNT_COMMISSION='Y')/*核算提成*/<%}%>
+<%if(!(isEmpty(arg.lossSingle))){%>AND IF(:lossSingle='N',c.LOSS_SINGLE IS NULL OR c.LOSS_SINGLE='N',c.LOSS_SINGLE='Y')/*亏单*/<%}%>
+<%if(!(isEmpty(arg.etdTimeFrom))){%>AND DATE_FORMAT(c.ETD,'%y-%m-%d') >= DATE_FORMAT(:etdTimeFrom,'%y-%m-%d')<%}%>
+<%if(!(isEmpty(arg.etdTimeTo))){%>AND DATE_FORMAT(c.ETD,'%y-%m-%d') <= DATE_FORMAT(:etdTimeTo,'%y-%m-%d')<%}%>
+<%if(!(isEmpty(arg.submitDateFrom))){%>AND DATE_FORMAT(c.CREATE_TIME,'%y-%m-%d') >= DATE_FORMAT(:submitDateFrom,'%y-%m-%d')  <%}%>
+<%if(!(isEmpty(arg.submitDateTo))){%>AND DATE_FORMAT(c.CREATE_TIME,'%y-%m-%d') <=DATE_FORMAT(:submitDateTo,'%y-%m-%d')<%}%>
+<%if(!(isEmpty(arg.ccniNo))){%>AND EXISTS(SELECT 1 FROM bl_containerinfo blc WHERE blc.BL_ID=bl.BL_ID AND containstr(:ccniNo,blc.CCNI_NO) )/*柜号*/<%}%>
+<%if(!(isEmpty(arg.vesselName))){%>AND SplitStr(:vesselName, bk.VESSEL_NAME, ',')/*船名*/<%}%>
+<%if(!(isEmpty(arg.voyageNo))){%>AND SplitStr(:voyageNo, bk.VOYAGE_NO, ',')/*船次*/<%}%>
+<%if(!(isEmpty(arg.eexpInvoiceNo))){%>AND EXISTS(select 1 from expense ex where c.CONSIGN_ID = ex.CONSIGN_ID AND ex.IS_DELETED = 'N' AND containstr(:eexpInvoiceNo,ex.EEXP_INVOICE_NO)) <%}%>
+<%if(!(isEmpty(arg.veriNo))){%>AND EXISTS(select 1 from customs cs INNER JOIN customs_verificationsheet csv ON cs.CUSTOMS_ID = csv.CUSTOMS_ID WHERE csv.IS_DELETED = 'N' AND c.CONSIGN_ID = cs.CONSIGN_ID AND containstr(:veriNo,csv.EXRS_ORDER_NO)/*核销单号*/)<%}%>
+<%if(!(isEmpty(arg.remNo))){%>AND SplitStr(:remNo, c.REM_NO, ',')/*备注*/<%}%>
+<%if(!(isEmpty(arg.bookDirector))){%>AND SplitStr(UPPER(:bookDirector), UPPER(subd.ename), ',')/*订舱员*/<%}%>
+<%if(!(isEmpty(arg.fileDirector))){%>AND SplitStr(UPPER(:fileDirector), UPPER(sufd.ename), ',')/*文件员*/<%}%>
+GROUP BY c.CONSIGN_NO
+ORDER BY c.CONSIGN_NO ASC

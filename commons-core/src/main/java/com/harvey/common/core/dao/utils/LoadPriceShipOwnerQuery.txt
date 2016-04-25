@@ -1,0 +1,194 @@
+SELECT * FROM (
+(SELECT ps.price_id,
+  so.shipowner_code,
+  so.shipowner_ename,
+  so.shipowner_cname,
+  ps.sailing_dec,
+  ps.load_port_code,
+  lp.port_cname AS load_port_cname,
+  lp.port_ename AS load_port_ename,
+  ps.dest_port_code,
+  dp.port_cname AS dest_port_cname,
+  dp.port_ename AS dest_port_ename,
+  ps.voyage,
+  ps.price_20gp,
+  ps.price_40gp,
+  ps.price_40hq,
+  li.line_cname,
+  li.line_ename,
+  li.line_code,
+  ps.validity_start,
+  ps.validity_end,
+  ps.price_20gp AS original_price_20gp,
+  ps.price_40gp AS original_price_40gp,
+  ps.price_40hq AS original_price_40hq,
+  ps.validity_start AS sale_validity_start,
+  ps.validity_end AS sale_validity_end,
+  ps.currency,
+  ps.company_id,
+  '' AS is_publish,
+  'Common' AS price_type_for_dispaly,
+  ps.load_port_code AS barge_port_code,
+  lp.port_cname AS barge_port_cname,
+  lp.port_ename AS barge_port_ename,
+  '' AS barge_group_no,
+  company.company_cname,
+  company.qq,
+  company.telephone,
+  '' as can_publish
+FROM price_shipowner ps
+LEFT JOIN bac_line li
+ON ps.line_code = li.line_code
+LEFT JOIN bac_shipowner so
+ON ps.shipowner_code = so.shipowner_code
+LEFT JOIN bac_port lp
+ON ps.load_port_code = lp.port_code
+LEFT JOIN bac_port dp
+ON ps.dest_port_code    = dp.port_code
+left join sys_company company
+on company.company_id=ps.company_id
+WHERE 1=1
+AND ps.system_status = '0'
+AND ps.auditing_status = '1'
+AND ps.validity_end  >= to_date(to_char(sysdate,'yyyy-mm-dd') || '00:00:00','yyyy-mm-dd hh24:mi:ss')
+
+<< AND ps.company_id = :companyId>>
+<< AND ps.price_id =:priceId>>
+<< AND ps.shipowner_code = :shipownerCode>>
+<< AND ps.dest_port_code = :destPortCode>>
+<< AND ps.line_code            = :lineCode>>
+<< AND :startDate <= ps.validity_end>>
+<< AND :endDate   >= ps.validity_start>>
+<< AND ps.auditor = :auditor>>
+<< AND ((:isPublish = '1' AND exists (select pub.pub_id from price_shipowner_pub pub where pub.price_id = ps.price_id and pub.barge_port_code = ps.load_port_code and pub.system_status = '0')) OR (:isPublish = '0' AND not exists (select pub.pub_id from price_shipowner_pub pub where pub.price_id = ps.price_id and pub.barge_port_code = ps.load_port_code and pub.system_status = '0'))) >> 
+) UNION(
+SELECT A.price_id,
+  A.shipowner_code,
+  A.shipowner_ename,
+  A.shipowner_cname,
+  A.sailing_dec,
+  A.load_port_code,
+  A.load_port_cname,
+  A.load_port_ename,
+  A.dest_port_code,
+  A.dest_port_cname,
+  A.dest_port_ename,
+  A.voyage,
+  A.price_20gp,
+  A.price_40gp,
+  A.price_40hq,
+  A.line_cname,
+  A.line_ename,
+  A.line_code,
+  A.validity_start,
+  A.validity_end,
+  A.original_price_20gp,
+  A.original_price_40gp,
+  A.original_price_40hq,
+  A.sale_validity_start,
+  A.sale_validity_end,
+  A.currency,
+  A.company_id,
+  A.is_publish,
+  A.price_type_for_dispaly,
+  B.barge_port_code,
+  B.barge_port_cname,
+  B.barge_port_ename,
+  A.barge_group_no,
+  A.company_cname,
+  A.qq,
+  A.telephone,
+  '' as can_publish
+FROM (
+SELECT ps.price_id,
+  so.shipowner_code,
+  so.shipowner_ename,
+  so.shipowner_cname,
+  ps.sailing_dec,
+  ps.load_port_code,
+  lp.port_cname AS load_port_cname,
+  lp.port_ename AS load_port_ename,
+  ps.dest_port_code,
+  dp.port_cname AS dest_port_cname,
+  dp.port_ename AS dest_port_ename,
+  ps.voyage,
+  ps.price_20gp,
+  ps.price_40gp,
+  ps.price_40hq,
+  li.line_cname,
+  li.line_ename,
+  li.line_code,
+  ps.validity_start,
+  ps.validity_end,
+  ps.price_20gp AS original_price_20gp,
+  ps.price_40gp AS original_price_40gp,
+  ps.price_40hq AS original_price_40hq,
+  ps.validity_start AS sale_validity_start,
+  ps.validity_end AS sale_validity_end,
+  ps.currency,
+  ps.company_id,
+  '' AS is_publish,
+  'Common' AS price_type_for_dispaly,
+  ps.load_port_code AS barge_port_code,
+  lp.port_cname AS barge_port_cname,
+  lp.port_ename AS barge_port_ename,
+  '' AS barge_group_no,
+  company.company_cname,
+  company.qq,
+  company.telephone,
+  '' as can_publish
+FROM price_shipowner ps
+LEFT JOIN bac_line li
+ON ps.line_code = li.line_code
+LEFT JOIN bac_shipowner so
+ON ps.shipowner_code = so.shipowner_code
+LEFT JOIN bac_port lp
+ON ps.load_port_code = lp.port_code
+LEFT JOIN bac_port dp
+ON ps.dest_port_code    = dp.port_code
+left join sys_company company
+on company.company_id=ps.company_id
+WHERE 1=1
+AND ps.system_status = '0'
+AND ps.auditing_status = '1'
+AND ps.validity_end  >= to_date(to_char(sysdate,'yyyy-mm-dd') || '00:00:00','yyyy-mm-dd hh24:mi:ss')
+
+<< AND ps.company_id = :companyId>>
+<< AND ps.price_id =:priceId>>
+<< AND ps.shipowner_code = :shipownerCode>>
+<< AND ps.dest_port_code = :destPortCode>>
+<< AND ps.line_code            = :lineCode>>
+<< AND :startDate <= ps.validity_end>>
+<< AND :endDate   >= ps.validity_start>>
+<< AND ps.auditor = :auditor>>
+) A JOIN (
+SELECT BARGE.*, P.PORT_CNAME AS barge_port_cname, P.PORT_ENAME AS barge_port_ename FROM
+(
+SELECT prv.group_no,
+    MAX(DECODE(pr.rule_column, 'SHIPOWNER_CODE', prv.rule_value,NULL))                        AS shipowner_code,
+    MAX(DECODE(pr.rule_column, 'BARGE_PORT_CODE', prv.rule_value,NULL))                       AS barge_port_code,
+    MAX(DECODE(pr.rule_column, 'LOAD_PORT_CODE', prv.rule_value,NULL))                        AS load_port_code,
+    MAX(DECODE(pr.rule_column, 'VALIDITY_START', to_date(prv.rule_value, 'yyyy-mm-dd'),NULL)) AS validity_start,
+    MAX(DECODE(pr.rule_column, 'VALIDITY_END', to_date(prv.rule_value, 'yyyy-mm-dd'),NULL))   AS validity_end,
+    MAX(prv.company_id)                                                                       AS company_id
+FROM price_rule_value prv
+LEFT JOIN price_rule pr
+ON prv.rule_id = pr.rule_id
+WHERE 1=1
+AND prv.system_status = '0'
+AND prv.auditing_status = '1'
+AND pr.rule_type = 1
+GROUP BY prv.group_no) BARGE 
+JOIN BAC_PORT P
+ON BARGE.barge_port_code = P.PORT_CODE AND P.SYSTEM_STATUS = 0
+<< AND :startDate <= BARGE.validity_end>>
+<< AND :endDate   >= BARGE.validity_start>>
+) B
+ON A.shipowner_code = B.shipowner_code 
+AND A.load_port_code = B.load_port_code
+AND A.company_id = B.company_id
+<< AND ((:isPublish = '1' AND exists (select pub.pub_id from price_shipowner_pub pub where pub.price_id = A.price_id and pub.barge_port_code = B.barge_port_code and pub.system_status = '0')) OR (:isPublish = '0' AND not exists (select pub.pub_id from price_shipowner_pub pub where pub.price_id = A.price_id and pub.barge_port_code = B.barge_port_code and pub.system_status = '0'))) >>
+) 
+) where 1=1 
+<<and (load_port_code = (CASE WHEN load_port_code=barge_port_code THEN :loadPortCode else '' end) or barge_port_code =(CASE WHEN load_port_code = barge_port_code THEN '' else :loadPortCode end)) >>
+ORDER BY shipowner_code, load_port_code, dest_port_code, barge_port_code desc        

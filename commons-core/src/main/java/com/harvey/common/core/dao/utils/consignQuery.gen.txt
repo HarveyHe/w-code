@@ -1,0 +1,147 @@
+SELECT c.*
+,sender_partise.PARTY_EN_FULLNAME AS senderName
+,receiver_partise.PARTY_EN_FULLNAME AS receiverName
+,notifier_partise.PARTY_EN_FULLNAME AS notifierName
+,mbl_sender_partise.PARTY_EN_FULLNAME AS mblsenderName
+,mbl_receiver_partise.PARTY_EN_FULLNAME AS mblreceiverName
+,mbl_notifier_partise.PARTY_EN_FULLNAME AS mblnotifierName
+,b1.BAC_MEANING as CBKD_NAME
+,b2.BAC_MEANING as COMMERCE_MODE_NAME
+,b3.BAC_MEANING as LOAD_MODE_NAME
+,b4.BAC_MEANING as PAY_MODE_NAME
+,pay_bac.BAC_MEANING AS PAY_PLACE_NAME
+,b5.BAC_MEANING AS SENDOUT_MODE_NAME
+,u1.ename as SALEMAN_NAME
+,sc.company_name as companyName
+,sd.DEPT_NAME 
+,party1.PARTY_EN_FULLNAME AS consignDeptName
+,party1.CREDIT_LIMIT AS creditLimit
+,party1.CREDIT_PERIOD AS creditPeriodEtd
+,party1.CREDIT_PERIOD_ETA AS creditPeriodEta
+,party1.PARTY_ADDRESS as consignDeptAddress
+,p2.PORT_EN_NAME as loadPlaceName
+,lp1.PORT_EN_NAME as loadPortName
+,p3.PORT_EN_NAME as destinationPlaceName
+,lp2.PORT_EN_NAME as destinationPortName
+,t.TRADE_EN_NAME as tradelineName
+,carrier_bac.BAC_MEANING as carrierName
+,party3.PARTY_EN_FULLNAME as bookingAgentName
+,b6.BAC_MEANING as TERM_NAME
+,party4.PARTY_EN_FULLNAME AS contractPartyName
+,b7.BAC_MEANING as PRICE_TYPE_NAME
+,party5.PARTY_EN_FULLNAME AS trailerCompanyName
+,party6.PARTY_EN_FULLNAME AS customsCompanyName
+,party7.PARTY_EN_FULLNAME AS innerLoadCompanyName
+,u2.ename as bookingDirectorName
+,u2.CELLPHONE as bookingDirectorCellphone
+,u2.email as bookingDirectorEmail
+,u3.ename as fileDirectorName
+,u4.ename as visitorDirectorName
+,u5.ename as trailerDirectorName
+,u6.ename as customsDirectorName
+,u7.ename as freightPriceTakerName
+,u8.ename as otherPriceTakerName
+,u9.ename as creatorName
+,u10.ename as modifierName
+,freedatetaker_user.username as freeDateTakerName
+,(SELECT 'Y' from expense e where e.consign_id=c.CONSIGN_ID and e.IS_DELETED<>'Y' LIMIT 1) as IS_EXPENSE
+,'' as testString
+,GROUP_CONCAT(DISTINCT blc.CCNI_NO) AS ccniNo
+from consign c
+LEFT JOIN billloading bl 
+ON c.CONSIGN_ID=bl.CONSIGN_ID AND bl.BL_TYPE='1' AND bl.IS_DELETED<>'Y'
+LEFT JOIN bl_containerinfo blc
+ON bl.BL_ID=blc.BL_ID
+LEFT JOIN bac_info b1
+on c.CBKD_ID=b1.BAC_CODE and b1.LOOKUP_TYPE='BIZ_MODE'
+LEFT JOIN bac_info b2
+on c.COMMERCE_MODE_CODE=b2.BAC_CODE and b2.LOOKUP_TYPE='COMMERCE_MODE'
+LEFT JOIN bac_info b3
+on c.LOAD_MODE_CODE=b3.BAC_CODE and b3.LOOKUP_TYPE='LOAD_MODE'
+LEFT JOIN bac_info b4
+on c.PAY_MODE_CODE=b4.BAC_CODE and b4.LOOKUP_TYPE='PAY_MODE'
+LEFT JOIN  bac_info pay_bac
+on c.PAY_PLACE_ID=pay_bac.BAC_CODE AND pay_bac.LOOKUP_TYPE='PAY_PLACE'
+LEFT JOIN bac_info b5
+on c.SENDOUT_MODE_CODE=b5.BAC_CODE and b5.LOOKUP_TYPE='SIGN_MODE'
+LEFT JOIN sys_user u1
+on c.SALEMAN_ID=u1.user_id
+LEFT JOIN sys_company sc
+on sc.company_id=u1.company_id
+LEFT JOIN sys_dept_member sdm
+on sdm.user_id=u1.user_id
+LEFT JOIN sys_department sd
+on sd.DEPT_ID=sdm.DEPT_ID
+LEFT JOIN hz_partise party1
+on c.CONSIGN_DEPT=party1.PARTY_CODE
+LEFT JOIN localports p2
+on c.LOAD_PLACE_ID=p2.PORT_ID
+LEFT JOIN localports lp1
+on c.LOAD_PORT_ID=lp1.PORT_ID
+LEFT JOIN localports p3
+on c.DESTINATION_PLACE_ID=p3.PORT_ID
+LEFT JOIN localports lp2
+on c.DESTINATION_PORT_ID=lp2.PORT_ID
+LEFT JOIN trades t
+on c.TRADELINE_CODE=t.TRADE_CODE
+LEFT JOIN bac_info carrier_bac
+on c.CARRIER=carrier_bac.BAC_CODE  AND carrier_bac.LOOKUP_TYPE='CARRIER'
+LEFT JOIN hz_partise party3
+on c.BOOKING_AGENT=party3.PARTY_CODE
+LEFT JOIN bac_info b6
+on c.TERM_CODE=b6.BAC_CODE and b6.LOOKUP_TYPE='TERM_CODE'
+LEFT JOIN hz_partise party4
+on c.CONTRACT_PARTY = party4.PARTY_CODE
+LEFT JOIN bac_info b7
+on c.PRICE_TYPE=b7.BAC_CODE and b7.LOOKUP_TYPE='PRICE_TYPE'
+LEFT JOIN hz_partise party5
+on c.TRAILER_COMPANY=party5.PARTY_CODE
+LEFT JOIN hz_partise party6
+on c.CUSTOMS_COMPANY=party6.PARTY_CODE
+LEFT JOIN hz_partise party7
+on c.INNER_LOAD_COMPANY=party7.PARTY_CODE
+LEFT JOIN sys_user u2
+on c.BOOKING_DIRECTOR=u2.user_id
+LEFT JOIN sys_user u3
+on c.FILE_DIRECTOR=u3.user_id
+LEFT JOIN sys_user u4
+on c.VISITOR_DIRECTOR=u4.user_id
+LEFT JOIN sys_user u5
+on c.TRAILER_DIRECTOR=u5.user_id
+LEFT JOIN sys_user u6
+on c.CUSTOMS_DIRECTOR=u6.user_id
+LEFT JOIN sys_user u7
+on c.FREIGHT_PRICE_TAKER=u7.user_id
+LEFT JOIN sys_user u8
+on c.OTHER_PRICE_TAKER=u8.user_id
+LEFT JOIN sys_user u9
+on c.CREATOR=u9.user_id
+LEFT JOIN sys_user u10
+on c.MODIFIER=u10.user_id
+LEFT JOIN hz_partise sender_partise
+ON c.SENDER=sender_partise.PARTY_CODE
+LEFT JOIN hz_partise receiver_partise
+ON c.RECEIVER=receiver_partise.PARTY_CODE
+LEFT JOIN hz_partise notifier_partise
+ON c.NOTIFIER=notifier_partise.PARTY_CODE
+LEFT JOIN hz_partise mbl_sender_partise
+ON c.MBL_SENDER=mbl_sender_partise.PARTY_CODE
+LEFT JOIN hz_partise mbl_receiver_partise
+ON c.MBL_RECEIVER=mbl_receiver_partise.PARTY_CODE
+LEFT JOIN hz_partise mbl_notifier_partise
+ON c.MBL_NOTIFIER=mbl_notifier_partise.PARTY_CODE
+LEFT JOIN sys_user freedatetaker_user
+ON c.FREE_DATE_TAKER= freedatetaker_user.user_id
+where c.IS_DELETED<>'Y'
+<%if(!(isEmpty(arg.consignId))){%> and c.CONSIGN_ID=:consignId<%}%>
+<%if(!(isEmpty(arg.consignNo))){%> and c.CONSIGN_NO=:consignNo<%}%>
+<%if(!(isEmpty(arg.ccniNo))){%> and UPPER(blc.CCNI_NO) LIKE CONCAT('%',UPPER(:ccniNo),'%') <%}%>
+AND ((:userId in(c.SALEMAN_ID,c.BOOKING_DIRECTOR,c.FILE_DIRECTOR,c.VISITOR_DIRECTOR,
+            c.TRAILER_DIRECTOR,c.CUSTOMS_DIRECTOR,c.FREIGHT_PRICE_TAKER,c.OTHER_PRICE_TAKER))
+    OR
+   exists(select 1 from sys_user_join t where t.user_id=:userId and t.join_user_id in(
+             c.SALEMAN_ID,c.BOOKING_DIRECTOR,c.FILE_DIRECTOR,c.VISITOR_DIRECTOR,
+             c.TRAILER_DIRECTOR,c.CUSTOMS_DIRECTOR,c.FREIGHT_PRICE_TAKER,c.OTHER_PRICE_TAKER) 
+          limit 1)
+)
+GROUP BY c.CONSIGN_ID

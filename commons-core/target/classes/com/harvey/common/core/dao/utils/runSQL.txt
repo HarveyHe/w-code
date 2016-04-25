@@ -1,0 +1,71 @@
+select count(*) as COUNT__ from (SELECT T__CONDITION__.* FROM (SELECT 
+wi.inventory_id,
+wi.cargo_amount, -- 数量,
+bwl.location_code AS LOCATION_CODE, -- 库位CODE
+bwl.location_name as LOCATION_NAME ,-- 库位NAME
+iw.in_warehouse_no AS IN_WAREHOUSE_NO ,
+wi.lock_amount AS LOCK_AMOUNT, --  锁定数量
+(
+CASE wi.cargo_status 
+WHEN '1' THEN '收货'
+WHEN '2' THEN '上架'
+WHEN '3' THEN '出库'
+END
+)AS CARGO_STATUS, --  货物状态（1：收货，2：上架，3出库,
+bw.warehouse_code AS WAREHOUSE_CODE, -- 仓库code
+bw.warehouse_desc_code AS WAREHOUSE_DESC_CODE,-- 仓库简码
+bw.warehouse_chn_name AS WAREHOUSE_NAME ,-- 仓库NAME
+bp.pallet_code AS PALLET_CODE, -- 托盘条码
+packbac.UNIT_CN_NAME AS PACKAGE_NAME, -- 包装
+specsbac.UNIT_CN_NAME AS CARGO_SPECS_NAME, -- 规格
+modelbac.UNIT_CN_NAME AS CARGO_MODEL_NAME, -- 型号
+sizebac.UNIT_CN_NAME AS CARGO_SIZE_NAME, -- 型号
+bc.cargo_length AS CARGO_LENGTH, --  '长',
+bc.cargo_width AS CARGO_WIDTH, --  '宽',
+bc.cargo_height AS CARGO_HEIGHT, --  '高',
+volumebac.UNIT_CN_NAME AS CARGO_VOLUME_NAME, -- 体积
+bc.cargo_volume AS CARGO_VOLUME, --  '体积',
+weightbac.UNIT_CN_NAME AS CARGO_WEIGHT_NAME, -- 重量
+bc.cargo_weight_gross AS CARGO_WEIGHT_GROSS, --  '毛重'
+bc.cargo_weight_net AS CARGO_WEIGHT_NET, --  '净重'
+colorbac.BAC_MEANING AS COLOR_NAME, -- 颜色
+measuresbac.BAC_MEANING AS MEASURES_NAME, -- 尺码
+bc.sku_code AS SKU_CODE, -- '条形码',
+bc.ean_code AS EAN_CODE, --  'EAN编码'
+bc.sku_print_state AS SKU_PRINT_STATE, -- 'SKU打印状态'
+bc.batch_no AS BATCH_NO, -- '批次号'
+bc.cargo_code AS CARGO_CODE, --  '物料编号'
+bc.cargo_chn_name AS CARGO_NAME, -- 货物名称
+catgotypebac.BAC_MEANING AS CARGOTYPE_NAME, -- 货物种类
+bc.cargo_marks AS CARGO_MARKS, --  '唛头'
+bc.remark AS CARGO_REMARK, 
+bc.cargo_specs_amount AS CARGO_SPECS_AMOUNT --  '规格数量'
+FROM wh_inventory wi
+LEFT JOIN bac_cargoinfo bc -- cargo
+ON wi.cargoinfo_id=bc.cargoinfo_id
+LEFT JOIN bac_unit packbac -- 包装单位
+ON bc.package_unit=packbac.UNIT_ID AND packbac.UNIT_TYPE='0'
+LEFT JOIN bac_unit specsbac -- 规格单位
+ON bc.cargo_specs_unit=specsbac.UNIT_ID AND  packbac.UNIT_TYPE='4'
+LEFT JOIN bac_unit modelbac -- 型号单位
+ON bc.cargo_model_unit=modelbac.UNIT_ID AND modelbac.UNIT_TYPE='5'
+LEFT JOIN bac_unit sizebac -- 长度单位
+ON bc.cargo_size_unit=sizebac.UNIT_ID AND sizebac.UNIT_TYPE='3'
+LEFT JOIN bac_unit volumebac -- 体积单位
+ON bc.cargo_volume_unit=volumebac.UNIT_ID AND volumebac.UNIT_TYPE='2'
+LEFT JOIN bac_unit weightbac -- 重量单位
+ON bc.cargo_weight_unit=weightbac.UNIT_ID AND weightbac.UNIT_TYPE='1'
+LEFT JOIN bac_info colorbac -- 颜色
+ON bc.cargo_color=colorbac.BAC_CODE AND colorbac.LOOKUP_TYPE='CARGO_COLOR'
+LEFT JOIN bac_info measuresbac -- 尺码
+ON bc.cargo_measures=measuresbac.BAC_CODE AND measuresbac.LOOKUP_TYPE='CARGO_MEASURES'
+LEFT JOIN bac_info catgotypebac -- 货物种类
+ON bc.cargo_type=catgotypebac.BAC_CODE AND catgotypebac.LOOKUP_TYPE='MATERIAL_TYPE'
+LEFT JOIN bac_wh_location bwl -- 库位
+ON wi.location_id=bwl.location_id
+LEFT JOIN in_warehouse iw -- 入库单
+ON wi.in_warehouse_id=iw.in_warehouse_id
+LEFT JOIN bac_warehouse bw -- 仓库
+ON wi.warehouse_id=bw.warehouse_id
+LEFT JOIN bac_pallet bp -- 托盘
+ON wi.pallet_id=bp.pallet_id) T__CONDITION__ WHERE ( warehouse_code like  :$param$_0 )) T__COUNT__

@@ -1,0 +1,6 @@
+﻿AND A.company_id = B.company_id
+
+) 
+) where 1=1 
+
+ORDER BY shipowner_code, load_port_code, dest_port_code, barge_port_code desc        

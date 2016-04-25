@@ -1,0 +1,21 @@
+
+-------------
+
+AND e.EEXP_UNSTRITE_AMOUNT > 0 
+<<AND e.EEXP_REQUEST_NO=:eexpRequestNo>>
+and 1=1
+fadfafdasfa[<<AND con.CONSIGN_NO  =:consignNo>>]aefgeadfadfafdasfa-<%println();%>
+fadfafdasfa[<<AND con.CONSIGN_NO ${''} =:consignNo>>]aefgeadfadfafdasfa
+<<AND e.EEXP_CUSTOFSETTLEMENT=:custofsettlement>>
+<<AND e.EEXP_ID not in (:eexpIds)>>
+AND 
+
+-----
+
+sssss
+
+asssss
+
+
+
+
